@@ -6,7 +6,7 @@ class ForgotPasswordScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Forgot Password'),
+        title: Text('Forgot Password',style: TextStyle(fontFamily: 'Monsteraat',fontWeight: FontWeight.bold),),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -15,7 +15,7 @@ class ForgotPasswordScreen extends StatelessWidget {
           children: [
             // Lottie animation
             Lottie.asset(
-              'assets/forgetani.json',
+              'assets/image/forgetani.json',
               width: 250,
               height: 250,
             ),
@@ -23,7 +23,7 @@ class ForgotPasswordScreen extends StatelessWidget {
             Text(
               'Enter your email to reset your password',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 18),
+              style: TextStyle(fontSize: 18,fontFamily: 'Monsteraat',fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 16),
             TextField(
