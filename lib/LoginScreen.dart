@@ -27,7 +27,7 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           // Lottie animation as background
           Lottie.asset(
-            'assets/welcomebackground.json',
+            'assets/image/welcomebackground.json',
             fit: BoxFit.cover,
             width: double.infinity,
             height: double.infinity,
@@ -48,13 +48,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         Text(
                           isLogin ? 'LOGIN' : 'REGISTER',
-                          style: TextStyle(
+                          style: TextStyle(fontFamily: 'Monsteraat',
                             fontSize: 34,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         SizedBox(height: 12),
-                        Text(
+                        Text(style: TextStyle(fontFamily: 'Monsteraat',fontWeight: FontWeight.bold,fontSize: 19),
                           isLogin
                               ? 'Welcome back, kindly sign in and continue your journey with us'
                               : 'Create an account to get started',
@@ -72,7 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               },
                               child: Text(
                                 'Login',
-                                style: TextStyle(
+                                style: TextStyle(fontSize: 15,
                                   decoration: isLogin
                                       ? TextDecoration.underline
                                       : TextDecoration.none,
@@ -88,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               },
                               child: Text(
                                 'Register',
-                                style: TextStyle(
+                                style: TextStyle(fontSize: 15,
                                   color: isLogin ? Colors.grey : Colors.black,
                                   decoration: !isLogin
                                       ? TextDecoration.underline
@@ -181,7 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               width: 50,
                               height: 50,
                               child: IconButton(
-                                icon: Image.asset('assets/facebook.png'),
+                                icon: Image.asset('assets/image/facebook.png'),
                                 onPressed: () {
                                   _launchURL('https://www.facebook.com/');
                                 },
@@ -192,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               width: 50,
                               height: 50,
                               child: IconButton(
-                                icon: Image.asset('assets/instagram.png'),
+                                icon: Image.asset('assets/image/instagram.png'),
                                 onPressed: () {
                                   _launchURL('https://www.instagram.com/');
                                 },
@@ -203,7 +203,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               width: 50,
                               height: 50,
                               child: IconButton(
-                                icon: Image.asset('assets/twitter.png'),
+                                icon: Image.asset('assets/image/twitter.png'),
                                 onPressed: () {
                                   _launchURL('https://www.twitter.com/');
                                 },
@@ -213,11 +213,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         Text.rich(
                           TextSpan(
-                            text: 'By signing up, you agree to our ',
+                            text: 'By signing up, you agree to our ',style: TextStyle(fontSize: 15,fontFamily: 'Monsteraat',fontWeight: FontWeight.bold),
                             children: [
                               TextSpan(
                                 text: 'Terms, ',
-                                style: TextStyle(color: Colors.blue),
+                                style: TextStyle(color: Colors.blue,fontFamily: 'Monsteraat',),
                                 recognizer: TapGestureRecognizer()
                                   ..onTap = () {
                                     //terms and condition section
