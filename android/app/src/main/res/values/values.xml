@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="google_api_key" translatable="false">AIzaSyBxFLgN_0FREb2PIwz0yHuw6p5M-73PTl0</string>
+    <string name="google_app_id" translatable="false">1:671032314486:android:7fd260453fe23d9338ed57</string>
+    <string name="gcm_defaultSenderId" translatable="false">671032314486</string>
+    <string name="project_id" translatable="false">atms-d7438</string>
+</resources>
