@@ -32,11 +32,18 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Stack(
         children: [
           // Lottie animation as background
+          // Lottie.asset(
+          //   'assets/image/welcomebackground.json',
+          //   fit: BoxFit.cover,
+          //   width: double.infinity,
+          //   height: double.infinity,
+          // ),
           Lottie.asset(
-            'assets/image/loginbg.json',
+            'assets/image/login.json',
             fit: BoxFit.cover,
             width: double.infinity,
             height: double.infinity,
+
           ),
           SafeArea(
             child: Center(
@@ -337,31 +344,34 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _signInWithEmailAndPassword() async {
     try {
-      await _auth.signInWithEmailAndPassword(
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Login Successfull")));
-      // Navigate to next screen on successful login
+          .showSnackBar(SnackBar(content: Text("Login Successful")));
+      // Navigate to the next screen on successful login
     } catch (e) {
       print('Sign in failed: $e');
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Login Failed: ${e.toString()}")));
       // Handle sign in errors
     }
   }
 
   void _registerWithEmailAndPassword() async {
     try {
-      await _auth.createUserWithEmailAndPassword(
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
-      // Navigate to next screen on successful registration
-      // show login successfull in toast
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Registration Successfull")));
+          .showSnackBar(SnackBar(content: Text("Registration Successful")));
+      // Navigate to the next screen on successful registration
     } catch (e) {
       print('Registration failed: $e');
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Registration Failed: ${e.toString()}")));
       // Handle registration errors
     }
   }
