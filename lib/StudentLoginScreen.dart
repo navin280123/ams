@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:ams/AdminDashBoard.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -9,14 +7,15 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/gestures.dart';
 import 'ForgotPasswordScreen.dart';
 import 'StudentDashBoard.dart';
+
 final FirebaseDatabase _database = FirebaseDatabase.instance;
-class LoginScreen extends StatefulWidget {
+
+class StudentLoginScreen extends StatefulWidget {
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  _StudentLoginScreenState createState() => _StudentLoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  bool isLogin = true;
+class _StudentLoginScreenState extends State<StudentLoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -41,7 +40,6 @@ class _LoginScreenState extends State<LoginScreen> {
             fit: BoxFit.cover,
             width: double.infinity,
             height: double.infinity,
-
           ),
           SafeArea(
             child: Center(
@@ -60,7 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            isLogin ? 'LOGIN' : 'REGISTER',
+                            'LOGIN',
                             style: TextStyle(
                               fontSize: 34,
                               fontWeight: FontWeight.bold,
@@ -68,71 +66,66 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           SizedBox(height: 12),
                           Text(
-                            isLogin
-                                ? 'Welcome back, kindly sign in and continue your journey with us'
-                                : 'Create an account to get started',
+                            'Welcome back, kindly sign in and continue your journey with us',
                             textAlign: TextAlign.center,
                           ),
                           SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    isLogin = true;
-                                  });
-                                },
-                                child: Text(
-                                  'Login',
-                                  style: TextStyle(
-                                    decoration: isLogin
-                                        ? TextDecoration.underline
-                                        : TextDecoration.none,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(width: 16),
-                              GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    isLogin = false;
-                                  });
-                                },
-                                child: Text(
-                                  'Register',
-                                  style: TextStyle(
-                                    color: isLogin ? Colors.grey : Colors.black,
-                                    decoration: !isLogin
-                                        ? TextDecoration.underline
-                                        : TextDecoration.none,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          TextFormField(
+                            controller: _emailController,
+                            decoration: InputDecoration(
+                              prefixIcon: Icon(Icons.email),
+                              hintText: 'Email',
+                              border: OutlineInputBorder(),
+                            ),
+                            validator: (value) {
+                              if (value?.isEmpty ?? true) {
+                                return 'Please enter your email';
+                              }
+                              if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value ?? '')) {
+                                return 'Please enter a valid email address';
+                              }
+                              return null;
+                            },
                           ),
                           SizedBox(height: 16),
-                          AnimatedSwitcher(
-                            duration: Duration(milliseconds: 900),
-                            transitionBuilder: (Widget child, Animation<double> animation) {
-                              return FadeTransition(child: child, opacity: animation);
+                          TextFormField(
+                            controller: _passwordController,
+                            decoration: InputDecoration(
+                              prefixIcon: Icon(Icons.lock),
+                              hintText: 'Password',
+                              border: OutlineInputBorder(),
+                            ),
+                            obscureText: true,
+                            validator: (value) {
+                              if (value?.isEmpty ?? true) {
+                                return 'Please enter your password';
+                              }
+                              return null;
                             },
-                            child: isLogin
-                                ? _buildLoginForm()
-                                : _buildRegisterForm(),
+                          ),
+                          SizedBox(height: 16),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ForgotPasswordScreen(),
+                                  ),
+                                );
+                              },
+                              child: Text('Forgot password?'),
+                            ),
                           ),
                           SizedBox(height: 16),
                           ElevatedButton(
                             onPressed: () {
                               if (_formKey.currentState?.validate() ?? false) {
-                                if (isLogin) {
-                                  _signInWithEmailAndPassword();
-                                } else {
-                                  _registerWithEmailAndPassword();
-                                }
+                                _signInWithEmailAndPassword();
                               }
                             },
-                            child: Text(isLogin ? 'Login' : 'Register'),
+                            child: Text('Login'),
                             style: ElevatedButton.styleFrom(
                               padding: EdgeInsets.symmetric(
                                 horizontal: 32,
@@ -228,118 +221,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildLoginForm() {
-    return Column(
-      key: ValueKey<bool>(isLogin),
-      children: [
-        TextFormField(
-          controller: _emailController,
-          decoration: InputDecoration(
-            prefixIcon: Icon(Icons.email),
-            hintText: 'Email',
-            border: OutlineInputBorder(),
-          ),
-          validator: (value) {
-            if (value?.isEmpty ?? true) {
-              return 'Please enter your email';
-            }
-            if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value ?? '')) {
-              return 'Please enter a valid email address';
-            }
-            return null;
-          },
-        ),
-        SizedBox(height: 16),
-        TextFormField(
-          controller: _passwordController,
-          decoration: InputDecoration(
-            prefixIcon: Icon(Icons.lock),
-            hintText: 'Password',
-            border: OutlineInputBorder(),
-          ),
-          obscureText: true,
-          validator: (value) {
-            if (value?.isEmpty ?? true) {
-              return 'Please enter your password';
-            }
-            return null;
-          },
-        ),
-        SizedBox(height: 16),
-        Align(
-          alignment: Alignment.centerRight,
-          child: GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ForgotPasswordScreen(),
-                ),
-              );
-            },
-            child: Text('Forgot password?'),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRegisterForm() {
-    return Column(
-      key: ValueKey<bool>(!isLogin),
-      children: [
-        TextFormField(
-          controller: _emailController,
-          decoration: InputDecoration(
-            prefixIcon: Icon(Icons.email),
-            hintText: 'Email',
-            border: OutlineInputBorder(),
-          ),
-          validator: (value) {
-            if (value?.isEmpty ?? true) {
-              return 'Please enter your email';
-            }
-            if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value ?? '')) {
-              return 'Please enter a valid email address';
-            }
-            return null;
-          },
-        ),
-        SizedBox(height: 16),
-        TextFormField(
-          controller: _passwordController,
-          decoration: InputDecoration(
-            prefixIcon: Icon(Icons.lock),
-            hintText: 'Password',
-            border: OutlineInputBorder(),
-          ),
-          obscureText: true,
-          validator: (value) {
-            if (value?.isEmpty ?? true) {
-              return 'Please enter your password';
-            }
-            return null;
-          },
-        ),
-        SizedBox(height: 16),
-        TextFormField(
-          decoration: InputDecoration(
-            prefixIcon: Icon(Icons.lock),
-            hintText: 'Confirm Password',
-            border: OutlineInputBorder(),
-          ),
-          obscureText: true,
-          validator: (value) {
-            if (value != _passwordController.text) {
-              return 'Passwords do not match';
-            }
-            return null;
-          },
-        ),
-      ],
-    );
-  }
-
   void _signInWithEmailAndPassword() async {
     try {
       UserCredential userCredential = await _auth.signInWithEmailAndPassword(
@@ -394,47 +275,4 @@ class _LoginScreenState extends State<LoginScreen> {
       // Handle sign in errors
     }
   }
-
-
-  void _registerWithEmailAndPassword() async {
-    try {
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
-
-      String email = _emailController.text.trim();
-      int randomNumber = _generateRandomNumber();
-      String sanitizedEmail = email.replaceAll('@', '').replaceAll('.', '');
-
-      DatabaseReference roleRef = _database.ref().child('role').child(sanitizedEmail);
-      DatabaseReference orgRef = _database.ref().child('org').child(randomNumber.toString());
-
-      await roleRef.set({
-        'role': randomNumber,
-      });
-
-      await orgRef.child('details').set({
-        'email': email,
-      });
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Registration Successful")));
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => AdminDashboard(email: email, role: "Admin",id: randomNumber.toString())),
-      );
-    } catch (e) {
-      print('Registration failed: $e');
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Registration Failed: ${e.toString()}")));
-    }
-  }
-
-  int _generateRandomNumber() {
-    Random random = Random();
-    return 10000000 + random.nextInt(90000000);
-  }
-
 }
