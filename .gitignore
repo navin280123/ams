@@ -9,6 +9,8 @@
 .history
 .svn/
 migrate_working_dir/
+/android/app/google-services.json
+/android/app/src/main/res/values/values.xml
 
 # IntelliJ related
 *.iml

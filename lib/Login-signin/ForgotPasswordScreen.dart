@@ -1,3 +1,4 @@
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lottie/lottie.dart';
@@ -7,20 +8,30 @@ class ForgotPasswordScreen extends StatelessWidget {
 
   Future<void> _resetPassword(BuildContext context) async {
     try {
-      final email = _emailController.text.trim();
+      final email = _emailController.text.trim().replaceAll(RegExp(r'[.@]'), ''); // Remove @ and . from email
+      print(email);
 
-      final list = await FirebaseAuth.instance.fetchSignInMethodsForEmail(email);
+      // Check if email exists in Firebase Realtime Database (assuming 'roles' node)
+      DatabaseEvent event = await FirebaseDatabase.instance.reference().child('role').child(email).once();
+      DataSnapshot snapshot = event.snapshot;
+      print(snapshot.value);
+      // Check if snapshot has a valu
+      if (snapshot.value != null) {
+        // Send password reset email
+        await FirebaseAuth.instance.sendPasswordResetEmail(email: _emailController.text.trim());
 
-      if (list.isNotEmpty) {
-        await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Password reset email sent'),
             backgroundColor: Colors.green,
           ),
         );
+
+        // Close current screen or navigate back
         Navigator.of(context).pop();
       } else {
+        // Email not registered
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: Email is not registered'),
@@ -29,6 +40,8 @@ class ForgotPasswordScreen extends StatelessWidget {
         );
       }
     } catch (e) {
+      // Handle any errors
+      print('Error: ${e.toString()}');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: ${e.toString()}'),
@@ -37,6 +50,7 @@ class ForgotPasswordScreen extends StatelessWidget {
       );
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

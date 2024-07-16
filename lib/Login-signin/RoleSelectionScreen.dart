@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'LoginScreen.dart';
-import 'StudentLoginScreen.dart';
+import 'package:ams/Login-signin/StudentLoginScreen.dart';
 
 class RoleSelectionScreen extends StatelessWidget {
   @override

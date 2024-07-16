@@ -1,16 +1,22 @@
-import 'package:ams/AdminDashBoard.dart';
-import 'package:ams/StudentDashBoard.dart';
+import 'package:ams/admin/AdminDashBoard.dart';
+import 'package:ams/student/StudentDashBoard.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'RoleSelectionScreen.dart';
+import 'package:ams/Login-signin/RoleSelectionScreen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  await FirebaseAppCheck.instance.activate(
+    // Choose the appropriate provider based on your platform
+    androidProvider: AndroidProvider.safetyNet,
+    // ... other providers for iOS, web, etc.
+  );
   runApp(AttendanceManagementSystem());
 }
 
@@ -18,6 +24,14 @@ class AttendanceManagementSystem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        bottomNavigationBarTheme: BottomNavigationBarThemeData(
+          backgroundColor: Colors.blue,
+          selectedItemColor: Colors.white,
+          unselectedItemColor: Colors.white70,
+        ),
+      ),
       debugShowCheckedModeBanner: false,
       home: WelcomeScreen(),
     );
@@ -34,6 +48,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   bool _showThirdText = false;
   bool _showLottie = false;
   bool _showButton = false;
+  bool _isUserLoggedIn = false;
 
   @override
   void initState() {
@@ -43,44 +58,62 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   Future<void> _checkLoginStatus() async {
     User? user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
+    if (user !=null) {
       String email = user.email ?? '';
       String cleanedEmail = email.replaceAll(RegExp(r'[.@]'), '');
 
-      DatabaseReference roleRef = FirebaseDatabase.instance.ref().child('role').child(cleanedEmail);
-      DatabaseEvent roleEvent = await roleRef.once();
+      DatabaseReference roleRef = FirebaseDatabase.instance.ref().child('role');
+      DatabaseEvent roleEvent = await roleRef.child(cleanedEmail).child('role').once();
       DataSnapshot roleSnapshot = roleEvent.snapshot;
 
       if (roleSnapshot.exists) {
-        Map<dynamic, dynamic> roleData = roleSnapshot.value as Map<dynamic, dynamic>;
-        String roleValue = roleData['role'];
-        String orgValue = roleValue.length == 8 ? roleValue : roleValue.substring(0, 8);
+        String roleValue = roleSnapshot.value as String;
 
-        DatabaseReference orgRef = FirebaseDatabase.instance.ref().child('org').child(orgValue).child('details');
-        DatabaseEvent orgEvent = await orgRef.once();
-        DataSnapshot orgSnapshot = orgEvent.snapshot;
+        if (roleValue.length == 8) {
+          // Admin flow
+          DatabaseReference orgRef = FirebaseDatabase.instance.ref().child('org').child(roleValue).child('details');
+          DatabaseEvent orgEvent = await orgRef.once();
+          DataSnapshot orgSnapshot = orgEvent.snapshot;
 
-        if (orgSnapshot.exists) {
-          Map<dynamic, dynamic> orgData = orgSnapshot.value as Map<dynamic, dynamic>;
-          String orgEmail = orgData['email'];
+          if (orgSnapshot.exists) {
+            Map<dynamic, dynamic> orgData = orgSnapshot.value as Map<dynamic, dynamic>;
+            String orgEmail = orgData['email'];
 
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text("Login Successful")));
-
-          // Navigate to the appropriate screen based on the role
-          if (roleValue.length == 8) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Login Successful")));
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => AdminDashboard(email: orgEmail, role: "Admin",id: orgValue)),
+              MaterialPageRoute(builder: (context) => AdminDashboard(email: orgEmail, role: "Admin", id: roleValue)),
             );
-          } else {
+          }
+        } else {
+          // Student flow
+          String studentId = roleValue.substring(0, 8);
+          DatabaseReference studentRef = FirebaseDatabase.instance.ref()
+              .child('org')
+              .child(studentId)
+              .child('students')
+              .child(cleanedEmail)
+              .child('details');
+          DatabaseEvent studentEvent = await studentRef.once();
+          DataSnapshot studentSnapshot = studentEvent.snapshot;
+
+          if (studentSnapshot.exists) {
+            Map<dynamic, dynamic> studentData = studentSnapshot.value as Map<dynamic, dynamic>;
+            String studentEmail = studentData['email'];
+
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Login Successful")));
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => StudentDashBoard(email: orgEmail, role: "Student",id: orgValue)),
+              MaterialPageRoute(builder: (context) => StudentDashBoard(email: studentEmail, role: "Student", id: studentId)),
             );
           }
         }
       }
+    } else {
+      setState(() {
+        _isUserLoggedIn = false;
+        // _showSecondText = true; // Show the second text if user is not logged in
+      });
     }
   }
 
@@ -134,9 +167,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                           ],
                           isRepeatingAnimation: false,
                           onFinished: () {
-                            setState(() {
-                              _showSecondText = true;
-                            });
+                            if (_isUserLoggedIn) {
+                              setState(() {
+                                _showLottie = true;
+                              });
+                            } else {
+                              setState(() {
+                                _showSecondText = true;
+                              });
+                            }
                           },
                         ),
                         if (_showSecondText)
@@ -206,26 +245,28 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                   color: Colors.white,
                                 ),
                               ),
-                              Text(
-                                'Attendance Management System\nCreated to record and manage attendance.\n\n\n',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontFamily: 'Monsteraat',
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                              if (!_isUserLoggedIn) ...[
+                                Text(
+                                  'Attendance Management System\nCreated to record and manage attendance.\n\n\n',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontFamily: 'Monsteraat',
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                'Unicorn is an app where users can leverage their social network to create, discover, share, and monetize events or services.\n\n\n\n',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontFamily: 'Monsteraat',
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 16,
-                                  color: Colors.white,
+                                Text(
+                                  'Unicorn is an app where users can leverage their social network to create, discover, share, and monetize events or services.\n\n\n\n',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontFamily: 'Monsteraat',
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 16,
+                                    color: Colors.white,
+                                  ),
                                 ),
-                              ),
+                              ],
                             ],
                           ),
                         ),

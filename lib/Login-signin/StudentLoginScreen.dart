@@ -1,4 +1,4 @@
-import 'package:ams/AdminDashBoard.dart';
+import 'package:ams/admin/AdminDashBoard.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
@@ -6,7 +6,7 @@ import 'package:lottie/lottie.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/gestures.dart';
 import 'ForgotPasswordScreen.dart';
-import 'StudentDashBoard.dart';
+import '../student/StudentDashBoard.dart';
 
 final FirebaseDatabase _database = FirebaseDatabase.instance;
 
@@ -104,19 +104,32 @@ class _StudentLoginScreenState extends State<StudentLoginScreen> {
                             },
                           ),
                           SizedBox(height: 16),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ForgotPasswordScreen(),
-                                  ),
-                                );
-                              },
-                              child: Text('Forgot password?'),
-                            ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ForgotPasswordScreen(),
+                                    ),
+                                  );
+                                },
+                                child: Text('Create Password'),
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ForgotPasswordScreen(),
+                                    ),
+                                  );
+                                },
+                                child: Text('Forgot password?'),
+                              ),
+                            ],
                           ),
                           SizedBox(height: 16),
                           ElevatedButton(
@@ -182,7 +195,7 @@ class _StudentLoginScreenState extends State<StudentLoginScreen> {
                                   style: TextStyle(color: Colors.blue),
                                   recognizer: TapGestureRecognizer()
                                     ..onTap = () {
-                                      // terms and condition section
+                                      // Navigate to terms and conditions section
                                     },
                                 ),
                                 TextSpan(
@@ -190,7 +203,7 @@ class _StudentLoginScreenState extends State<StudentLoginScreen> {
                                   style: TextStyle(color: Colors.blue),
                                   recognizer: TapGestureRecognizer()
                                     ..onTap = () {
-                                      // data policy section
+                                      // Navigate to data policy section
                                     },
                                 ),
                                 TextSpan(
@@ -201,7 +214,7 @@ class _StudentLoginScreenState extends State<StudentLoginScreen> {
                                   style: TextStyle(color: Colors.blue),
                                   recognizer: TapGestureRecognizer()
                                     ..onTap = () {
-                                      // cookie policy section
+                                      // Navigate to cookie policy section
                                     },
                                 ),
                               ],
@@ -223,46 +236,59 @@ class _StudentLoginScreenState extends State<StudentLoginScreen> {
 
   void _signInWithEmailAndPassword() async {
     try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
       User? user = userCredential.user;
-      if (user != null) {
+      print(user.toString());
+      if (user !=null) {
         String email = user.email ?? '';
         String cleanedEmail = email.replaceAll(RegExp(r'[.@]'), '');
 
-        DatabaseReference roleRef = FirebaseDatabase.instance.ref().child('role').child(cleanedEmail);
-        DatabaseEvent roleEvent = await roleRef.once();
+        DatabaseReference roleRef = FirebaseDatabase.instance.ref().child('role');
+        DatabaseEvent roleEvent = await roleRef.child(cleanedEmail).child('role').once();
         DataSnapshot roleSnapshot = roleEvent.snapshot;
-
+        print(roleSnapshot.exists);
         if (roleSnapshot.exists) {
-          Map<dynamic, dynamic> roleData = roleSnapshot.value as Map<dynamic, dynamic>;
-          String roleValue = roleData['role'];
-          String orgValue = roleValue.length == 8 ? roleValue : roleValue.substring(0, 8);
+          String roleValue = roleSnapshot.value as String;
+          print(roleValue);
+          if (roleValue.length == 8) {
+            // Admin flow
+            DatabaseReference orgRef = FirebaseDatabase.instance.ref().child('org').child(roleValue).child('details');
+            DatabaseEvent orgEvent = await orgRef.once();
+            DataSnapshot orgSnapshot = orgEvent.snapshot;
+            print(orgSnapshot.exists);
+            if (orgSnapshot.exists) {
+              Map<dynamic, dynamic> orgData = orgSnapshot.value as Map<dynamic, dynamic>;
+              String orgEmail = orgData['email'];
 
-          DatabaseReference orgRef = FirebaseDatabase.instance.ref().child('org').child(orgValue).child('details');
-          DatabaseEvent orgEvent = await orgRef.once();
-          DataSnapshot orgSnapshot = orgEvent.snapshot;
-
-          if (orgSnapshot.exists) {
-            Map<dynamic, dynamic> orgData = orgSnapshot.value as Map<dynamic, dynamic>;
-            String orgEmail = orgData['email'];
-
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text("Login Successful")));
-
-            // Navigate to the appropriate screen based on the role
-            if (roleValue.length == 8) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Login Successful")));
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => AdminDashboard(email: orgEmail, role: "Admin",id: orgValue)),
+                MaterialPageRoute(builder: (context) => AdminDashboard(email: orgEmail, role: "Admin", id: roleValue)),
               );
-            } else {
+            }
+          } else {
+            // Student flow
+            String studentId = roleValue.substring(0, 8);
+            DatabaseReference studentRef = FirebaseDatabase.instance.ref()
+                .child('org')
+                .child(studentId)
+                .child('students')
+                .child(cleanedEmail)
+                .child('details');
+            DatabaseEvent studentEvent = await studentRef.once();
+            DataSnapshot studentSnapshot = studentEvent.snapshot;
+            print(studentSnapshot.exists);
+            if (studentSnapshot.exists) {
+              Map<dynamic, dynamic> studentData = studentSnapshot.value as Map<dynamic, dynamic>;
+              String studentEmail = studentData['email'];
+
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Login Successful")));
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => StudentDashBoard(email: orgEmail, role: "Student",id: orgValue)),
+                MaterialPageRoute(builder: (context) => StudentDashBoard(email: studentEmail, role: "Student", id: studentId)),
               );
             }
           }
@@ -270,9 +296,7 @@ class _StudentLoginScreenState extends State<StudentLoginScreen> {
       }
     } catch (e) {
       print('Sign in failed: $e');
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Login Failed: ${e.toString()}")));
-      // Handle sign in errors
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Login Failed: ${e.toString()}")));
     }
   }
 }
