@@ -121,7 +121,7 @@ class _GroupScreenState extends State<GroupScreen> {
               children: [
                 CircleAvatar(
                   radius: 50,
-                  child: Icon(Icons.person),
+                  child: Icon(Icons.add),
                 ),
                 // Group name
                 TextFormField(

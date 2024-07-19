@@ -52,7 +52,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Admin Dashboard'),
+        title: Text('Admin Dashboard',style: TextStyle(fontFamily: 'Monsteraat',fontWeight: FontWeight.w900),),
         actions: [
           IconButton(
             icon: Icon(Icons.person),

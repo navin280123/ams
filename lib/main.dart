@@ -75,17 +75,17 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           DatabaseEvent orgEvent = await orgRef.once();
           DataSnapshot orgSnapshot = orgEvent.snapshot;
 
-          if (orgSnapshot.exists) {
-            Map<dynamic, dynamic> orgData = orgSnapshot.value as Map<dynamic, dynamic>;
-            String orgEmail = orgData['email'];
+         if (orgSnapshot.exists) {
+          Map<dynamic, dynamic> orgData = orgSnapshot.value as Map<dynamic, dynamic>;
+          String orgEmail = orgData['email'];
 
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Login Successful")));
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => AdminDashboard(email: orgEmail, role: "Admin", id: roleValue)),
-            );
-          }
-        } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Login Successful")));
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => AdminDashboard(email: orgEmail, role: "Admin", id: roleValue)),
+          );
+        }
+      } else {
           // Student flow
           String studentId = roleValue.substring(0, 8);
           DatabaseReference studentRef = FirebaseDatabase.instance.ref()

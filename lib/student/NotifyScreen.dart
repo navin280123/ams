@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 
-class OverviewScreen extends StatelessWidget {
+class Notifyscreen extends StatelessWidget {
   final String email;
   final String id;
   final String role;
+  Notifyscreen({required this.email, required this.role, required this.id});
 
-  OverviewScreen({required this.email, required this.role, required this.id});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      
+      appBar: AppBar(
+        title: Text('Notifications'),
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
