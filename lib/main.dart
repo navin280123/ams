@@ -178,7 +178,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                             }
                           },
                         ),
-                        if (_showSecondText)
+                        if (_showSecondText && !_isUserLoggedIn)
                           AnimatedTextKit(
                             animatedTexts: [
                               TypewriterAnimatedText(

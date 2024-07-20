@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:ams/admin/StudentDetailsScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -413,14 +414,26 @@ class _StudentScreenState extends State<StudentScreen> {
               borderRadius: BorderRadius.circular(10.0),
               side: BorderSide(color: Colors.grey, width: 1),
             ),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: Colors.primaries[index % Colors.primaries.length],
-                child: Icon(Icons.person, color: Colors.white),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Colors.primaries[index % Colors.primaries.length],
+                  child: Icon(Icons.person, color: Colors.white),
+                ),
+                title: Text(student['name']),
+                subtitle: Text(student['email']),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => StudentDetailsScreen(
+                      studentId: student['email'].replaceAll('.', '').replaceAll('@', ''),
+                      email: widget.email,
+                      role: widget.role,
+                      orgId: widget.id,
+                    )),
+                  );
+                },
               ),
-              title: Text(student['name']),
-              subtitle: Text(student['email']),
-            ),
+
           );
         },
       ),

@@ -1,8 +1,9 @@
-
+import 'package:ams/admin/GroupDetailsScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:intl_phone_field/phone_number.dart';
+
 class GroupScreen extends StatefulWidget {
   final String email;
   final String id;
@@ -18,27 +19,40 @@ class _GroupScreenState extends State<GroupScreen> {
   final TextEditingController _groupNameController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _groupAdminController = TextEditingController();
-  final TextEditingController _groupAdminMobileController =
-  TextEditingController();
-  List<String> _randomStudentNames = [
-    'Alice',
-    'Bob',
-    'Charlie',
-    'David',
-    'Eve',
-    'Frank',
-    'Grace',
-    'Henry',
-    'Ivy',
-    'Jack'
-  ];
+  final TextEditingController _groupAdminMobileController = TextEditingController();
+  List<String> _studentNames = [];
+  List<String> _studentId = [];
   List<String> _selectedStudents = [];
+  List<String> _groupsId = [];
   List<Map<String, dynamic>> _students = [];
 
   @override
   void initState() {
     super.initState();
     _fetchStudents();
+    _fetchStudentNames();
+  }
+
+  Future<void> _fetchStudentNames() async {
+    final DatabaseReference _databaseReference =
+    FirebaseDatabase.instance.ref().child('org').child(widget.id).child('students');
+
+    DatabaseEvent event = await _databaseReference.once();
+    DataSnapshot snapshot = event.snapshot; // Get DataSnapshot from DatabaseEvent
+
+    if (snapshot.value != null) { // Check if data exists
+      Map<dynamic, dynamic> students = snapshot.value as Map<dynamic, dynamic>;
+      students.forEach((key, value) {
+        String studentName = value['details']['name'];
+        setState(() {
+          _studentNames.add(studentName);
+        });
+        String studentId = key;
+        setState(() {
+          _studentId.add(studentId);
+        });
+      });
+    }
   }
 
   Future<void> _fetchStudents() async {
@@ -46,13 +60,19 @@ class _GroupScreenState extends State<GroupScreen> {
         .reference()
         .child('org')
         .child(widget.id)
-        .child('students');
+        .child('groups');
     dbRef.onValue.listen((event) {
       final data = event.snapshot.value as Map?;
       if (data != null) {
         List<Map<String, dynamic>> newStudents = [];
-        data.forEach((key, value) {
-          final studentData = Map<String, dynamic>.from(value['details']);
+        data.forEach((groupId, groupValue) {
+          _groupsId.add(groupId);
+          final groupDetails = Map<String, dynamic>.from(groupValue['details']);
+          final studentData = {
+            'groupId': groupId,
+            'groupName': groupDetails['groupName'],
+            'groupAdmin': groupDetails['groupAdmin'],
+          };
           newStudents.add(studentData);
         });
         setState(() {
@@ -61,6 +81,7 @@ class _GroupScreenState extends State<GroupScreen> {
       }
     });
   }
+
   void _addStudentDialog() {
     showDialog(
       context: context,
@@ -73,19 +94,19 @@ class _GroupScreenState extends State<GroupScreen> {
                 width: double.minPositive,
                 child: ListView.builder(
                   shrinkWrap: true,
-                  itemCount: _randomStudentNames.length,
+                  itemCount: _studentNames.length,
                   itemBuilder: (BuildContext context, int index) {
-                    final isSelected = _selectedStudents.contains(_randomStudentNames[index]);
+                    final isSelected = _selectedStudents.contains(_studentNames[index]);
                     return ListTile(
-                      title: Text(_randomStudentNames[index]),
+                      title: Text(_studentNames[index]),
                       leading: Checkbox(
                         value: isSelected,
                         onChanged: (bool? value) {
                           setState(() {
                             if (value!) {
-                              _selectedStudents.add(_randomStudentNames[index]);
+                              _selectedStudents.add(_studentNames[index]);
                             } else {
-                              _selectedStudents.remove(_randomStudentNames[index]);
+                              _selectedStudents.remove(_studentNames[index]);
                             }
                           });
                         },
@@ -192,13 +213,11 @@ class _GroupScreenState extends State<GroupScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-
                     ElevatedButton(
                       onPressed: _addStudentDialog, // Add student button action
                       child: Text('Add Student'),
                     ),
                   ],
-
                 ),
                 SizedBox(height: 20),
                 Row(
@@ -214,7 +233,6 @@ class _GroupScreenState extends State<GroupScreen> {
                       onPressed: _saveGroupDetails, // Save button action
                       child: Text('Save'),
                     ),
-
                   ],
                 ),
               ],
@@ -226,28 +244,38 @@ class _GroupScreenState extends State<GroupScreen> {
   }
 
   void _saveGroupDetails() {
-    // Implement your save logic here
-    // For example:
-    String groupName = _groupNameController.text;
-    String location = _locationController.text;
-    String groupAdmin = _groupAdminController.text;
-    String groupAdminPhone = _groupAdminMobileController.text;
+    String groupName = _groupNameController.text.trim();
+    String location = _locationController.text.trim();
+    String groupAdmin = _groupAdminController.text.trim();
+    String groupAdminPhone = _groupAdminMobileController.text.trim();
 
-    // Validate and save data
     if (_validateInputs()) {
-      // Save data to database or perform necessary actions
-      print('Group Name: $groupName');
-      print('Location: $location');
-      print('Group Admin: $groupAdmin');
-      print('Group Admin Phone: $groupAdminPhone');
+      DatabaseReference groupRef = FirebaseDatabase.instance.ref()
+          .child('org')
+          .child(widget.id) // Assuming 'widget.id' holds the organization ID
+          .child('groups')
+          .push(); // Generate a unique key for the group
 
-      // Clear controllers after saving
+      // Save group details
+      groupRef.child('details').set({
+        'groupName': groupName,
+        'location': location,
+        'groupAdmin': groupAdmin,
+        'adminPhone': groupAdminPhone,
+      });
+
+      for (int i = 0; i < _selectedStudents.length; i++) {
+        groupRef.child('students').child(_studentId[_studentNames.indexOf(_selectedStudents[i])]).set({
+          'name': _selectedStudents[i],
+        });
+      }
+
+      // Clear controllers, show success message, and close dialog
       _groupNameController.clear();
       _locationController.clear();
       _groupAdminController.clear();
       _groupAdminMobileController.clear();
-
-      // Close dialog
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Group saved successfully!")));
       Navigator.of(context).pop();
     }
   }
@@ -268,7 +296,6 @@ class _GroupScreenState extends State<GroupScreen> {
     return true;
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -288,8 +315,21 @@ class _GroupScreenState extends State<GroupScreen> {
                 backgroundColor: Colors.primaries[index % Colors.primaries.length],
                 child: Icon(Icons.person, color: Colors.white),
               ),
-              title: Text(student['name']),
-              subtitle: Text(student['email']),
+              title: Text(student['groupName']),
+              subtitle: Text('Group Admin: ${student['groupAdmin']}'),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => GroupDetailsScreen(
+                      groupId: student['groupId'],
+                      email: widget.email,
+                      role: widget.role,
+                      orgId: widget.id,
+                    ),
+                  ),
+                );
+              },
             ),
           );
         },
@@ -301,4 +341,3 @@ class _GroupScreenState extends State<GroupScreen> {
     );
   }
 }
-

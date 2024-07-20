@@ -1,3 +1,4 @@
+import 'package:ams/admin/AdminProfileScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../Login-signin/LoginScreen.dart';
@@ -24,7 +25,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   List<Widget> _widgetOptions() => [
     GroupScreen(email: widget.email, role: widget.role, id: widget.id),
     StudentScreen(email: widget.email, role: widget.role, id: widget.id),
-    NotificationScreen(email: widget.email, role: widget.role, id: widget.id),
+    NotificationScreen(email: widget.email, role: widget.role, orgId: widget.id),
     QrScreen(email: widget.email, role: widget.role, id: widget.id),
     OverviewScreen(email: widget.email, role: widget.role, id: widget.id),
   ];
@@ -58,6 +59,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
             icon: Icon(Icons.person),
             onPressed:(){
               // Profile Setting.
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AdminProfileScreen( orgId: widget.id)),
+              );
             }
           ),
           IconButton(
