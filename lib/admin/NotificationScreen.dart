@@ -156,18 +156,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-<<<<<<< Updated upstream
-      
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Email: $email'),
-            Text('Role: $role'),
-            Text('ID: $id'),
-          ],
-        ),
-=======
       body: ListView.builder(
         itemCount: _notifications.length,
         itemBuilder: (context, index) {
@@ -190,7 +178,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
             ),
           );
         },
->>>>>>> Stashed changes
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddNotificationDialog,

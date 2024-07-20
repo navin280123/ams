@@ -26,18 +26,6 @@ class OverviewScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-<<<<<<< Updated upstream
-      
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Email: $email'),
-            Text('Role: $role'),
-            Text('ID: $id'),
-          ],
-        ),
-=======
       body: FutureBuilder<Map<String, int>>(
         future: getCounts(),
         builder: (context, snapshot) {
@@ -103,7 +91,6 @@ class OverviewScreen extends StatelessWidget {
             ],
           );
         },
->>>>>>> Stashed changes
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
