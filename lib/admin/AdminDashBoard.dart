@@ -66,12 +66,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
             }
           ),
           IconButton(
-            icon: Icon(Icons.settings),
-            onPressed: () {
-              // setting functionality
-            },
-          ),
-          IconButton(
             icon: Icon(Icons.logout),
             onPressed: () {
               _signOut(context);

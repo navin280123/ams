@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:lottie/lottie.dart';
 
-class GroupDetailsScreen extends StatefulWidget {
+class GrpDetailsScreen extends StatefulWidget {
   final String groupId;
   final String email;
   final String role;
   final String orgId;
 
-  GroupDetailsScreen({
+  GrpDetailsScreen({
     required this.groupId,
     required this.email,
     required this.role,
@@ -16,19 +16,17 @@ class GroupDetailsScreen extends StatefulWidget {
   });
 
   @override
-  _GroupDetailsScreenState createState() => _GroupDetailsScreenState();
+  _GrpDetailsScreenState createState() => _GrpDetailsScreenState();
 }
 
-class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
+class _GrpDetailsScreenState extends State<GrpDetailsScreen> {
   final TextEditingController _groupNameController = TextEditingController();
   final TextEditingController _groupAdminController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _groupAdminMobileController = TextEditingController();
   late DatabaseReference _groupRef;
-  bool _isEditing = false;
   List<Map<String, dynamic>> _students = [];
   List<String> _selectedStudentIds = [];
-  List<String> _originalSelectedStudentIds = [];
 
   @override
   void initState() {
@@ -87,55 +85,8 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
       List<String> selectedIds = selectedStudents.keys.cast<String>().toList();
       setState(() {
         _selectedStudentIds = selectedIds;
-        _originalSelectedStudentIds = List.from(selectedIds); // Save original list for comparison
       });
     }
-  }
-
-  Future<void> _updateGroupDetails() async {
-    await _groupRef.child('details').update({
-      'groupName': _groupNameController.text.trim(),
-      'groupAdmin': _groupAdminController.text.trim(),
-      'location': _locationController.text.trim(),
-      'adminPhone': _groupAdminMobileController.text.trim(),
-    });
-
-    for (String studentId in _selectedStudentIds) {
-      DatabaseReference studentGroupRef = FirebaseDatabase.instance.ref()
-          .child('org')
-          .child(widget.orgId)
-          .child('students')
-          .child(studentId)
-          .child('groups')
-          .child(widget.groupId)
-          .child('details');
-      await studentGroupRef.set({
-        'groupName': _groupNameController.text.trim(),
-        'groupAdmin': _groupAdminController.text.trim(),
-        'location': _locationController.text.trim(),
-        'adminPhone': _groupAdminMobileController.text.trim(),
-      });
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Group updated successfully!')));
-  }
-
-  Future<void> _deleteGroup() async {
-    await _groupRef.remove();
-
-    for (String studentId in _originalSelectedStudentIds) {
-      DatabaseReference studentGroupRef = FirebaseDatabase.instance.ref()
-          .child('org')
-          .child(widget.orgId)
-          .child('students')
-          .child(studentId)
-          .child('groups')
-          .child(widget.groupId);
-      await studentGroupRef.remove();
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Group deleted successfully!')));
-    Navigator.of(context).pop();
   }
 
   void _showStudentDialog() {
@@ -158,15 +109,7 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
                       title: Text(student['name']),
                       leading: Checkbox(
                         value: isSelected,
-                        onChanged: (bool? value) {
-                          setState(() {
-                            if (value!) {
-                              _selectedStudentIds.add(student['id']);
-                            } else {
-                              _selectedStudentIds.remove(student['id']);
-                            }
-                          });
-                        },
+                        onChanged: null, // No interaction allowed
                       ),
                     );
                   },
@@ -176,10 +119,9 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
                 Text('Selected Students: ${_selectedStudentIds.length}'),
                 TextButton(
                   onPressed: () {
-                    _saveSelectedStudents();
                     Navigator.of(context).pop();
                   },
-                  child: Text('Save'),
+                  child: Text('Close'),
                 ),
               ],
             );
@@ -189,70 +131,12 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
     );
   }
 
-  Future<void> _saveSelectedStudents() async {
-    DatabaseReference groupStudentsRef = _groupRef.child('students');
-    await groupStudentsRef.remove();
-
-    for (String studentId in _selectedStudentIds) {
-      await groupStudentsRef.child(studentId).set({
-        'name': _students.firstWhere((student) => student['id'] == studentId)['name'],
-      });
-
-      DatabaseReference studentGroupRef = FirebaseDatabase.instance.ref()
-          .child('org')
-          .child(widget.orgId)
-          .child('students')
-          .child(studentId)
-          .child('groups')
-          .child(widget.groupId)
-          .child('details');
-      await studentGroupRef.set({
-        'groupName': _groupNameController.text.trim(),
-        'groupAdmin': _groupAdminController.text.trim(),
-        'location': _locationController.text.trim(),
-        'adminPhone': _groupAdminMobileController.text.trim(),
-      });
-    }
-
-    // Remove the group from students who are unselected
-    for (String studentId in _originalSelectedStudentIds) {
-      if (!_selectedStudentIds.contains(studentId)) {
-        DatabaseReference studentGroupRef = FirebaseDatabase.instance.ref()
-            .child('org')
-            .child(widget.orgId)
-            .child('students')
-            .child(studentId)
-            .child('groups')
-            .child(widget.groupId);
-        await studentGroupRef.remove();
-      }
-    }
-
-    // Update the original selected students list
-    _originalSelectedStudentIds = List.from(_selectedStudentIds);
-
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Students updated successfully!')));
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Group Details'),
         backgroundColor: Colors.lightBlueAccent,
-        actions: [
-          IconButton(
-            icon: Icon(_isEditing ? Icons.check : Icons.edit),
-            onPressed: () {
-              if (_isEditing) {
-                _updateGroupDetails();
-              }
-              setState(() {
-                _isEditing = !_isEditing;
-              });
-            },
-          ),
-        ],
       ),
       body: Stack(
         children: [
@@ -274,29 +158,18 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        _buildDetailRow('Group Name', _groupNameController, _isEditing),
+                        _buildDetailRow('Group Name', _groupNameController, false),
                         SizedBox(height: 10),
-                        _buildDetailRow('Group Admin', _groupAdminController, _isEditing),
+                        _buildDetailRow('Group Admin', _groupAdminController, false),
                         SizedBox(height: 10),
-                        _buildDetailRow('Location', _locationController, _isEditing),
+                        _buildDetailRow('Location', _locationController, false),
                         SizedBox(height: 10),
-                        _buildDetailRow('Admin Phone', _groupAdminMobileController, _isEditing),
+                        _buildDetailRow('Admin Phone', _groupAdminMobileController, false),
                         SizedBox(height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            ElevatedButton.icon(
-                              onPressed: _isEditing ? null : _showStudentDialog,
-                              icon: Icon(Icons.group),
-                              label: Text('View Students'),
-                            ),
-                            ElevatedButton.icon(
-                              onPressed: _isEditing ? _deleteGroup : null,
-                              icon: Icon(Icons.delete),
-                              label: Text('Delete Group'),
-                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                            ),
-                          ],
+                        ElevatedButton.icon(
+                          onPressed: _showStudentDialog,
+                          icon: Icon(Icons.group),
+                          label: Text('View Students'),
                         ),
                       ],
                     ),
@@ -323,14 +196,7 @@ class _GroupDetailsScreenState extends State<GroupDetailsScreen> {
         ),
         Expanded(
           flex: 3,
-          child: isEditing
-              ? TextFormField(
-            controller: controller,
-            decoration: InputDecoration(
-              border: OutlineInputBorder(),
-            ),
-          )
-              : Padding(
+          child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8.0),
             child: Text(
               controller.text,

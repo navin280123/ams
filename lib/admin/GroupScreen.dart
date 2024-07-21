@@ -20,6 +20,7 @@ class _GroupScreenState extends State<GroupScreen> {
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _groupAdminController = TextEditingController();
   final TextEditingController _groupAdminMobileController = TextEditingController();
+  String _selectedCountryCode = '+91';
   List<String> _studentNames = [];
   List<String> _studentId = [];
   List<String> _selectedStudents = [];
@@ -189,22 +190,21 @@ class _GroupScreenState extends State<GroupScreen> {
                   },
                 ),
                 SizedBox(height: 10),
-                // Group admin phone
                 IntlPhoneField(
-                  controller: _groupAdminMobileController,
                   decoration: InputDecoration(
-                    labelText: 'Group Admin Phone',
+                    labelText: 'Mobile No',
                     border: OutlineInputBorder(),
                   ),
                   initialCountryCode: 'IN',
                   onChanged: (phone) {
-                    _groupAdminMobileController.text = phone.completeNumber;
+                    _selectedCountryCode = phone.countryCode;
+                    _groupAdminMobileController.text = phone.number;
                   },
-                  validator: (PhoneNumber? value) {
-                    if (value == null || value.completeNumber.isEmpty) {
-                      return 'Please enter a group admin phone number';
-                    } else if (!RegExp(r'^[0-9]+$').hasMatch(value.completeNumber)) {
-                      return 'Please enter a valid group admin phone number';
+                  validator: (value) {
+                    if (value == null || value.number.isEmpty) {
+                      return 'Please enter a mobile number';
+                    } else if (!RegExp(r'^[0-9]+$').hasMatch(value.number)) {
+                      return 'Please enter a valid mobile number';
                     }
                     return null;
                   },
@@ -243,30 +243,51 @@ class _GroupScreenState extends State<GroupScreen> {
     );
   }
 
-  void _saveGroupDetails() {
+
+  void _saveGroupDetails() async {
     String groupName = _groupNameController.text.trim();
     String location = _locationController.text.trim();
     String groupAdmin = _groupAdminController.text.trim();
-    String groupAdminPhone = _groupAdminMobileController.text.trim();
+    String groupAdminPhone = '$_selectedCountryCode-${_groupAdminMobileController.text}';
 
     if (_validateInputs()) {
       DatabaseReference groupRef = FirebaseDatabase.instance.ref()
           .child('org')
-          .child(widget.id) // Assuming 'widget.id' holds the organization ID
+          .child(widget.id)
           .child('groups')
           .push(); // Generate a unique key for the group
 
+      String groupId = groupRef.key!; // Get the generated key
+
       // Save group details
-      groupRef.child('details').set({
+      await groupRef.child('details').set({
         'groupName': groupName,
         'location': location,
         'groupAdmin': groupAdmin,
         'adminPhone': groupAdminPhone,
       });
 
-      for (int i = 0; i < _selectedStudents.length; i++) {
-        groupRef.child('students').child(_studentId[_studentNames.indexOf(_selectedStudents[i])]).set({
-          'name': _selectedStudents[i],
+      // Save group details under each selected student
+      for (String studentName in _selectedStudents) {
+        String studentId = _studentId[_studentNames.indexOf(studentName)];
+        DatabaseReference studentGroupRef = FirebaseDatabase.instance.ref()
+            .child('org')
+            .child(widget.id)
+            .child('students')
+            .child(studentId)
+            .child('groups')
+            .child(groupId); // Use the same group key
+
+        await studentGroupRef.child('details').set({
+          'groupName': groupName,
+          'location': location,
+          'groupAdmin': groupAdmin,
+          'adminPhone': groupAdminPhone,
+        });
+
+        // Save student under group
+        await groupRef.child('students').child(studentId).set({
+          'name': studentName,
         });
       }
 
@@ -281,20 +302,16 @@ class _GroupScreenState extends State<GroupScreen> {
   }
 
   bool _validateInputs() {
-    // Implement your validation logic here
-    // Example: Validate all form fields
     if (_groupNameController.text.isEmpty ||
         _locationController.text.isEmpty ||
         _groupAdminController.text.isEmpty ||
         _groupAdminMobileController.text.isEmpty) {
-      // Show validation errors if any field is empty
-      setState(() {
-        // Update UI if necessary
-      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("All fields are required.")));
       return false;
     }
     return true;
   }
+
 
   @override
   Widget build(BuildContext context) {

@@ -1,3 +1,5 @@
+import 'package:ams/student/ScanQrScreen.dart';
+import 'package:ams/student/StudentProfileScreen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ams/Login-signin/LoginScreen.dart';
 import 'package:ams/student/GrpScreen.dart';
@@ -21,7 +23,7 @@ class _StudentDashBoardState extends State<StudentDashBoard> {
 
   List<Widget> _widgetOptions() => [
     Grpscreen(email:widget.email, role: widget.role, id: widget.id),
-    Notifyscreen(email:widget.email, role: widget.role, id: widget.id),
+    NotifyScreen(email: widget.email, role: widget.role, orgId: widget.id),
     Overview(email:widget.email, role: widget.role, id: widget.id),
   ];
 void _onItemTapped(int index) {
@@ -53,14 +55,20 @@ void _onItemTapped(int index) {
           IconButton(
             icon: Icon(Icons.person),
             onPressed:(){
-              // Profile Setting.
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => StudentProfileScreen( orgId: widget.id,email: widget.email)),
+              );
             }
           ),
           
           IconButton(
             icon: Icon(Icons.qr_code),
             onPressed: () {
-              // setting functionality
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ScanQrScreen( orgId: widget.id,email: widget.email)),
+              );
             },
           ),
          IconButton(

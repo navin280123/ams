@@ -9,6 +9,24 @@ import 'dart:io';
 import 'dart:math';
 import 'package:image/image.dart' as img;
 
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Group QR Codes',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: QrScreen(email: 'test@example.com', id: 'sampleId', role: 'user'),
+    );
+  }
+}
 
 class QrScreen extends StatefulWidget {
   final String email;
@@ -22,28 +40,23 @@ class QrScreen extends StatefulWidget {
 }
 
 class _QrScreenState extends State<QrScreen> {
-  String? qrData;
+  final databaseReference = FirebaseDatabase.instance.reference();
   bool isLoading = true;
-  bool isQrAvailable = false;
+  Map<String, dynamic> groupDetails = {};
 
   @override
   void initState() {
     super.initState();
-    _checkQrAvailability();
+    _fetchGroupDetails();
   }
 
-  Future<void> _checkQrAvailability() async {
-    final databaseReference = FirebaseDatabase.instance.reference();
-    final now = DateTime.now();
-    final formattedDate = "${now.year}-${now.month}-${now.day}";
-
-    final snapshot = await databaseReference.child('org/${widget.id}/qr/$formattedDate').get();
+  Future<void> _fetchGroupDetails() async {
+    final snapshot = await databaseReference.child('org/${widget.id}/groups').get();
 
     if (snapshot.exists) {
       final data = snapshot.value as Map<dynamic, dynamic>;
       setState(() {
-        qrData = data['qrData'];
-        isQrAvailable = true;
+        groupDetails = Map<String, dynamic>.from(data);
         isLoading = false;
       });
     } else {
@@ -53,19 +66,27 @@ class _QrScreenState extends State<QrScreen> {
     }
   }
 
-  void _generateQrCode() {
-    setState(() {
-      qrData = 'RandomValue-${Random().nextInt(10000)}';
+  Future<void> _generateQrCode(String groupId) async {
+    final qrData = 'RandomValue-${Random().nextInt(10000)}';
+    final now = DateTime.now();
+    final formattedDate = "${now.year}-${now.month}-${now.day}";
+
+    await databaseReference.child('org/${widget.id}/groups/$groupId/qr/$formattedDate').set({
+      'qrData': qrData,
+      'timestamp': now.toIso8601String(),
     });
-    _saveQrDetailsToFirebase(qrData!);
+
+    setState(() {
+      groupDetails[groupId]['qr'] = {formattedDate: {'qrData': qrData, 'timestamp': now.toIso8601String()}};
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('QR code generated and saved to Firebase!')));
   }
 
-  Future<void> _saveQrCode() async {
-    if (qrData == null) return;
-
+  Future<void> _saveQrCode(String qrData) async {
     try {
       final qrValidationResult = QrValidator.validate(
-        data: qrData!,
+        data: qrData,
         version: QrVersions.auto,
         errorCorrectionLevel: QrErrorCorrectLevel.L,
       );
@@ -98,12 +119,10 @@ class _QrScreenState extends State<QrScreen> {
     }
   }
 
-  void _shareQrCode() async {
-    if (qrData == null) return;
-
+  void _shareQrCode(String qrData) async {
     try {
       final qrValidationResult = QrValidator.validate(
-        data: qrData!,
+        data: qrData,
         version: QrVersions.auto,
         errorCorrectionLevel: QrErrorCorrectLevel.L,
       );
@@ -135,47 +154,110 @@ class _QrScreenState extends State<QrScreen> {
     }
   }
 
-  Future<void> _saveQrDetailsToFirebase(String qrData) async {
-    final databaseReference = FirebaseDatabase.instance.reference();
-    final now = DateTime.now();
-    final formattedDate = "${now.year}-${now.month}-${now.day}";
-
-    await databaseReference.child('org/${widget.id}/qr/$formattedDate').set({
-      'qrData': qrData,
-      'timestamp': now.toIso8601String(),
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('QR details saved to Firebase!')));
+  void _viewQrCode(String qrData) {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (context) => QrCodeFullScreen(qrData: qrData),
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final formattedDate = "${now.year}-${now.month}-${now.day}";
+
     return Scaffold(
-      body: Center(
-        child: isLoading
-            ? CircularProgressIndicator()
-            : Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (qrData != null)
-              QrImageView(
-                data: qrData!,
-                size: 300,
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : ListView.builder(
+        itemCount: groupDetails.length,
+        itemBuilder: (context, index) {
+          final groupId = groupDetails.keys.elementAt(index);
+          final group = groupDetails[groupId];
+          final details = group['details'];
+          final qrData = group['qr']?[formattedDate]?['qrData'];
+
+          return Card(
+            margin: EdgeInsets.all(8.0),
+            color: Colors.blueAccent.withOpacity(0.2),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.group, size: 30, color: Colors.blueAccent),
+                      SizedBox(width: 8),
+                      Text('Group: ${details['groupName']}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.person, size: 30, color: Colors.blueAccent),
+                      SizedBox(width: 8),
+                      Text('Admin: ${details['groupAdmin']}', style: TextStyle(fontSize: 16)),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.phone, size: 30, color: Colors.blueAccent),
+                      SizedBox(width: 8),
+                      Text('Admin Phone: ${details['adminPhone']}', style: TextStyle(fontSize: 16)),
+                    ],
+                  ),
+                  SizedBox(height: 16),
+                  qrData == null
+                      ? ElevatedButton(
+                    onPressed: () => _generateQrCode(groupId),
+                    child: Text('Generate QR Code'),
+                  )
+                      : Column(
+                    children: [
+                      QrImageView(
+                        data: qrData,
+                        size: 150,
+                      ),
+                      ElevatedButton(
+                        onPressed: () => _viewQrCode(qrData),
+                        child: Text('View QR Code'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => _saveQrCode(qrData),
+                        child: Text('Save QR Code to Gallery'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => _shareQrCode(qrData),
+                        child: Text('Share QR Code'),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            Spacer(),
-            ElevatedButton(
-              onPressed: isQrAvailable ? null : _generateQrCode,
-              child: Text('Generate QR Code'),
             ),
-            ElevatedButton(
-              onPressed: _saveQrCode,
-              child: Text('Save QR Code to Gallery'),
-            ),
-            ElevatedButton(
-              onPressed: _shareQrCode,
-              child: Text('Share QR Code'),
-            ),
-          ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class QrCodeFullScreen extends StatelessWidget {
+  final String qrData;
+
+  QrCodeFullScreen({required this.qrData});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('QR Code Full Screen'),
+      ),
+      body: Center(
+        child: QrImageView(
+          data: qrData,
+          size: 300,
         ),
       ),
     );
