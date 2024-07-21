@@ -1,5 +1,4 @@
 import 'dart:math';
-
 import 'package:ams/admin/AdminDashBoard.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -9,7 +8,9 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/gestures.dart';
 import 'ForgotPasswordScreen.dart';
 import '../student/StudentDashBoard.dart';
+
 final FirebaseDatabase _database = FirebaseDatabase.instance;
+
 class LoginScreen extends StatefulWidget {
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -17,6 +18,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   bool isLogin = true;
+  bool _isLoading = false; // Flag for loading animation
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -41,7 +43,6 @@ class _LoginScreenState extends State<LoginScreen> {
             fit: BoxFit.cover,
             width: double.infinity,
             height: double.infinity,
-
           ),
           SafeArea(
             child: Center(
@@ -125,6 +126,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ElevatedButton(
                             onPressed: () {
                               if (_formKey.currentState?.validate() ?? false) {
+                                setState(() {
+                                  _isLoading = true; // Show loading animation
+                                });
                                 if (isLogin) {
                                   _signInWithEmailAndPassword();
                                 } else {
@@ -223,6 +227,19 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
+          if (_isLoading) // Show loading animation on top
+            Positioned.fill(
+              child: Container(
+                color: Colors.black54,
+                child: Center(
+                  child: Lottie.asset(
+                    'assets/image/loading.json', // Replace with your loading animation asset
+                    width: 200,
+                    height: 200,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -348,7 +365,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       User? user = userCredential.user;
-      if (user !=null) {
+      if (user != null) {
         String email = user.email ?? '';
         String cleanedEmail = email.replaceAll(RegExp(r'[.@]'), '');
 
@@ -405,9 +422,12 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text("Login Failed: ${e.toString()}")));
       // Handle sign in errors
+    } finally {
+      setState(() {
+        _isLoading = false; // Hide loading animation
+      });
     }
   }
-
 
   void _registerWithEmailAndPassword() async {
     try {
@@ -436,12 +456,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => AdminDashboard(email: email, role: "Admin",id: randomNumber.toString())),
+        MaterialPageRoute(builder: (context) => AdminDashboard(email: email, role: "Admin", id: randomNumber.toString())),
       );
     } catch (e) {
       print('Registration failed: $e');
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text("Registration Failed: ${e.toString()}")));
+    } finally {
+      setState(() {
+        _isLoading = false; // Hide loading animation
+      });
     }
   }
 
@@ -449,5 +473,4 @@ class _LoginScreenState extends State<LoginScreen> {
     Random random = Random();
     return 10000000 + random.nextInt(90000000);
   }
-
 }

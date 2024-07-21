@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
 class ScanQrScreen extends StatefulWidget {
@@ -139,7 +138,6 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('Attendance marked successfully')),
               );
-
               foundMatchingQR = true;
               break;
             }

@@ -53,17 +53,25 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Admin Dashboard',style: TextStyle(fontFamily: 'Monsteraat',fontWeight: FontWeight.w900),),
+        title: Text(
+          'Admin Dashboard',
+          style: TextStyle(
+            fontFamily: 'Monsteraat',
+            fontWeight: FontWeight.w900,
+          ),
+        ),
         actions: [
           IconButton(
             icon: Icon(Icons.person),
-            onPressed:(){
-              // Profile Setting.
+            onPressed: () {
+              // Profile Setting
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => AdminProfileScreen( orgId: widget.id)),
+                MaterialPageRoute(
+                  builder: (context) => AdminProfileScreen(orgId: widget.id),
+                ),
               );
-            }
+            },
           ),
           IconButton(
             icon: Icon(Icons.logout),
@@ -72,13 +80,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
             },
           ),
         ],
+        // No leading widget to avoid the back button
       ),
       body: _widgetOptions().elementAt(_selectedIndex),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             backgroundColor: Colors.blue,
-
             icon: Icon(Icons.group),
             label: 'Groups',
           ),
@@ -109,10 +117,3 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 }
-
-
-
-
-
-
-

@@ -48,7 +48,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   bool _showThirdText = false;
   bool _showLottie = false;
   bool _showButton = false;
-  bool _isUserLoggedIn = false;
+  bool _isUserLoggedIn = true;
 
   @override
   void initState() {

@@ -7,6 +7,21 @@ class ForgotPasswordScreen extends StatelessWidget {
   final TextEditingController _emailController = TextEditingController();
 
   Future<void> _resetPassword(BuildContext context) async {
+    // Show loading animation
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Center(
+          child: Lottie.asset(
+            'assets/image/loading.json',
+            width: 200,
+            height: 200,
+          ),
+        );
+      },
+    );
+
     try {
       final email = _emailController.text.trim().replaceAll(RegExp(r'[.@]'), ''); // Remove @ and . from email
       print(email);
@@ -15,10 +30,14 @@ class ForgotPasswordScreen extends StatelessWidget {
       DatabaseEvent event = await FirebaseDatabase.instance.reference().child('role').child(email).once();
       DataSnapshot snapshot = event.snapshot;
       print(snapshot.value);
-      // Check if snapshot has a valu
+
+      // Check if snapshot has a value
       if (snapshot.value != null) {
         // Send password reset email
         await FirebaseAuth.instance.sendPasswordResetEmail(email: _emailController.text.trim());
+
+        // Dismiss loading animation
+        Navigator.of(context).pop();
 
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
@@ -31,6 +50,9 @@ class ForgotPasswordScreen extends StatelessWidget {
         // Close current screen or navigate back
         Navigator.of(context).pop();
       } else {
+        // Dismiss loading animation
+        Navigator.of(context).pop();
+
         // Email not registered
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -40,6 +62,9 @@ class ForgotPasswordScreen extends StatelessWidget {
         );
       }
     } catch (e) {
+      // Dismiss loading animation
+      Navigator.of(context).pop();
+
       // Handle any errors
       print('Error: ${e.toString()}');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -50,7 +75,6 @@ class ForgotPasswordScreen extends StatelessWidget {
       );
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
